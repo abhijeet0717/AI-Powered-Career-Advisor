@@ -58,7 +58,6 @@ clf.fit(X_train, y_train)
 y_pred = clf.predict(X_test)
 print(classification_report(y_test, y_pred))
 
-# Save Model and Scaler
 import joblib
 joblib.dump(clf, "placement_tier_classifier.pkl")
 joblib.dump(scaler, "placement_scaler.pkl")
