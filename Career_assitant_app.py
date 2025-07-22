@@ -5,8 +5,8 @@ import joblib
 from sklearn.preprocessing import StandardScaler
 
 
-clf = joblib.load(r"C:\Users\91707\abhijeet\Projects\Ai_career_advisor local\placement_tier_classifier.pkl")
-scaler = joblib.load(r"C:\Users\91707\abhijeet\Projects\Ai_career_advisor local\placement_scaler.pkl")
+clf = joblib.load(r"placement_tier_classifier.pkl")
+scaler = joblib.load(r"placement_scaler.pkl")
 
 
 @st.cache_data
