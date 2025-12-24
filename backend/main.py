@@ -14,7 +14,7 @@ app = FastAPI(title="AI Career Advisor API", version="1.0.0")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "https://smart-career-advisor-abhijeet.vercel.app/"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "https://smart-career-advisor-abhijeet.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
