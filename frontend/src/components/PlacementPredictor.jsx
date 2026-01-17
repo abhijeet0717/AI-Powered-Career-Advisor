@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, Zap, Target, BarChart3, Lightbulb } from 'lucide-react';
+import { Briefcase, Zap, Target, BarChart3, Lightbulb, Map, Loader2, Sparkles, ClipboardList, MapPin, BookOpen, Wrench, Clock } from 'lucide-react';
 import { apiService } from '../services/api';
 
 const PlacementPredictor = () => {
@@ -18,7 +18,9 @@ const PlacementPredictor = () => {
     skills: ''
   });
   const [prediction, setPrediction] = useState(null);
+  const [roadmap, setRoadmap] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [roadmapLoading, setRoadmapLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -29,8 +31,11 @@ const PlacementPredictor = () => {
     try {
       const response = await apiService.getAvailableFields();
       setFields(response.data.fields);
-      setFormData(prev => ({ ...prev, field: response.data.fields[0] || '' }));
+      if (response.data.fields.length > 0) {
+        setFormData(prev => ({ ...prev, field: response.data.fields[0] }));
+      }
     } catch (err) {
+      console.error('Failed to load fields:', err);
       setError('Failed to load fields');
     }
   };
@@ -43,13 +48,20 @@ const PlacementPredictor = () => {
   };
 
   const handlePredict = async () => {
-    if (!formData.field) return;
+    if (!formData.field) {
+      setError('Please select a field of interest');
+      return;
+    }
     
     setLoading(true);
     setError('');
     
     try {
-      const skillsList = formData.skills.split(',').map(skill => skill.trim()).filter(skill => skill);
+      const skillsList = formData.skills
+        .split(',')
+        .map(skill => skill.trim())
+        .filter(skill => skill);
+      
       const dataToSend = {
         ...formData,
         skills: skillsList
@@ -58,9 +70,35 @@ const PlacementPredictor = () => {
       const response = await apiService.predictPlacement(dataToSend);
       setPrediction(response.data);
     } catch (err) {
-      setError('Failed to predict placement');
+      console.error('Prediction error:', err);
+      setError('Failed to predict placement. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGenerateRoadmap = async () => {
+    if (!formData.field) {
+      setError('Please select a field of interest');
+      return;
+    }
+    
+    setRoadmapLoading(true);
+    setError('');
+    
+    try {
+      const skillsList = formData.skills
+        .split(',')
+        .map(skill => skill.trim())
+        .filter(skill => skill);
+      
+      const response = await apiService.generateRoadmap(formData.field, skillsList);
+      setRoadmap(response.data);
+    } catch (err) {
+      console.error('Roadmap error:', err);
+      setError('Failed to generate roadmap. Please try again.');
+    } finally {
+      setRoadmapLoading(false);
     }
   };
 
@@ -79,9 +117,13 @@ const PlacementPredictor = () => {
 
   return (
     <div className="placement-predictor">
-      <h2><Briefcase size={32} className="inline-icon" /> Placement Tier Prediction</h2>
+      <h2>
+        <Briefcase size={32} className="inline-icon" /> Placement Tier Prediction
+      </h2>
       <p className="subtitle">Get AI-powered insights into your placement prospects</p>
       
+      {error && <div className="error-message">{error}</div>}
+
       <div className="form-grid">
         <div className="form-group">
           <label>Field of Interest:</label>
@@ -90,6 +132,7 @@ const PlacementPredictor = () => {
             onChange={(e) => handleInputChange('field', e.target.value)}
             className="form-control"
           >
+            <option value="">Select a field</option>
             {fields.map(field => (
               <option key={field} value={field}>{field}</option>
             ))}
@@ -254,15 +297,39 @@ const PlacementPredictor = () => {
         </div>
       </div>
 
-      <button 
-        onClick={handlePredict}
-        disabled={loading || !formData.field}
-        className="btn-primary"
-      >
-        {loading ? 'Predicting...' : <><Zap size={16} /> Predict My Placement Tier</>}
-      </button>
+      <div className="button-group">
+        <button 
+          onClick={handlePredict}
+          disabled={loading || !formData.field}
+          className="btn-primary"
+        >
+          {loading ? (
+            <>
+              <Loader2 size={16} className="spinning" /> Predicting...
+            </>
+          ) : (
+            <>
+              <Zap size={16} /> Predict My Placement Tier
+            </>
+          )}
+        </button>
 
-      {error && <div className="error">{error}</div>}
+        <button 
+          onClick={handleGenerateRoadmap}
+          disabled={roadmapLoading || !formData.field}
+          className="btn-secondary"
+        >
+          {roadmapLoading ? (
+            <>
+              <Loader2 size={16} className="spinning" /> Generating...
+            </>
+          ) : (
+            <>
+              <Map size={16} /> Generate AI Roadmap
+            </>
+          )}
+        </button>
+      </div>
 
       {prediction && (
         <div className="prediction-result">
@@ -306,6 +373,53 @@ const PlacementPredictor = () => {
               <li>Gain relevant work experience through internships</li>
               <li>Enhance communication skills through practice and workshops</li>
             </ul>
+          </div>
+        </div>
+      )}
+
+      {roadmap && (
+        <div className="roadmap-result">
+          <div className="roadmap-header">
+            <h3><Map size={24} /> Your Learning Roadmap</h3>
+            {roadmap.ai_generated ? (
+              <span className="ai-badge"><Sparkles size={14} /> AI Generated</span>
+            ) : (
+              <span className="fallback-badge"><ClipboardList size={14} /> Standard Roadmap</span>
+            )}
+          </div>
+
+          <div className="roadmap-section">
+            <h4><MapPin size={18} /> Steps to Follow</h4>
+            <ol>
+              {roadmap.roadmap.steps.map((step, idx) => (
+                <li key={idx}>{step}</li>
+              ))}
+            </ol>
+          </div>
+
+          <div className="roadmap-section">
+            <h4><BookOpen size={18} /> Recommended Resources</h4>
+            <ul>
+              {roadmap.roadmap.resources.map((resource, idx) => (
+                <li key={idx}>{resource}</li>
+              ))}
+            </ul>
+          </div>
+
+          {roadmap.roadmap.projects && roadmap.roadmap.projects.length > 0 && (
+            <div className="roadmap-section">
+              <h4><Wrench size={18} /> Project Ideas</h4>
+              <ul>
+                {roadmap.roadmap.projects.map((project, idx) => (
+                  <li key={idx}>{project}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="roadmap-section">
+            <h4><Clock size={18} /> Estimated Timeline</h4>
+            <p className="timeline-text">{roadmap.roadmap.timeline}</p>
           </div>
         </div>
       )}
